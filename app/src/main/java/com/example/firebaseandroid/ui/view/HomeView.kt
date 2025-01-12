@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,10 +30,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -79,6 +85,7 @@ fun HomeScreen(
             homeUiState = viewModel.mhsUIState,
             retryAction = {viewModel.getMhs()}, Modifier.padding(innerPadding),
             onDetailClick = onDetailClick, onDeleteClick = {
+                viewModel.deleteMhs(it)
                 viewModel.getMhs()
             }
         )
@@ -86,13 +93,16 @@ fun HomeScreen(
 }
 
 @Composable
+
 fun HomeStatus(
     homeUiState: HomeUiState,
     retryAction: () -> Unit,
     modifier: Modifier = Modifier,
-    onDeleteClick: (String) -> Unit = {},
+    onDeleteClick: (Mahasiswa) -> Unit = {},
     onDetailClick: (String) -> Unit = {}
 ) {
+    var deleteConfirm by remember { mutableStateOf<Mahasiswa?>(null) }  // Menyimpan data yang dipilih untuk dihapus
+
     when (homeUiState) {
         is HomeUiState.Loading -> OnLoading(modifier = modifier.fillMaxSize())
         is HomeUiState.Success -> {
@@ -102,15 +112,29 @@ fun HomeStatus(
                 onDetailClick = {
                     onDetailClick(it.nim)
                 },
-                onDeleteClick = {
-                    onDeleteClick(it)
+                onDeleteClick = { mahasiswa ->
+                    deleteConfirm = mahasiswa  // Menyimpan mahasiswa yang ingin dihapus
                 }
             )
+
+            // Dialog Konfirmasi Penghapusan
+            deleteConfirm?.let { data ->
+                DeleteConfirmationDialog(
+                    onDeleteConfirm = {
+                        onDeleteClick(data)  // Hapus data
+                        deleteConfirm = null  // Reset
+                    },
+                    onDeleteCancel = {
+                        deleteConfirm = null  // Reset jika cancel
+                    }
+                )
+            }
         }
         is HomeUiState.Error -> OnError(retryAction, modifier = modifier.fillMaxSize(),
-            message = homeUiState.exception.message?: "ERROR")
+            message = homeUiState.exception.message ?: "ERROR")
     }
 }
+
 
 @Composable
 fun OnLoading(modifier: Modifier = Modifier,){
@@ -143,7 +167,7 @@ fun MhsLayout(
     mahasiswa: List<Mahasiswa>,
     modifier: Modifier = Modifier,
     onDetailClick: (Mahasiswa) -> Unit,
-    onDeleteClick: (String) -> Unit = {}
+    onDeleteClick: (Mahasiswa) -> Unit
 ) {
     LazyColumn(
         modifier = modifier,
@@ -167,7 +191,7 @@ fun MhsLayout(
 fun MhsCard(
     mahasiswa: Mahasiswa,
     modifier: Modifier = Modifier,
-    onDeleteClick: (String) -> Unit = {}
+    onDeleteClick: (Mahasiswa) -> Unit = {}
 ){
     Card(
         modifier = modifier,
@@ -187,7 +211,7 @@ fun MhsCard(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = {onDeleteClick(mahasiswa.nim)}) {
+                IconButton(onClick = {onDeleteClick(mahasiswa)}) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null
@@ -209,4 +233,27 @@ fun MhsCard(
             )
         }
     }
+}
+
+@Composable
+private fun DeleteConfirmationDialog (
+    onDeleteConfirm: () -> Unit,
+    onDeleteCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AlertDialog(onDismissRequest = { /* Do nothing */ },
+        title = { Text("Delete Data") },
+        text = { Text("Apakah anda yakin ingin menghapus data?") },
+        modifier = modifier,
+        dismissButton = {
+            TextButton(onClick = onDeleteCancel) {
+                Text(text = "Cancel")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDeleteConfirm) {
+                Text(text = "Yes")
+            }
+        }
+    )
 }
