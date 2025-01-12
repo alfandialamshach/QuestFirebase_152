@@ -145,7 +145,10 @@ fun InsertBodyMhs(
                         .padding(end = 8.dp)
                 )
                 Text("Loading...")
+            }else {
+                Text("Tambah")
             }
+
         }
     }
 }
