@@ -132,6 +132,8 @@ fun HomeStatus(
         }
         is HomeUiState.Error -> OnError(retryAction, modifier = modifier.fillMaxSize(),
             message = homeUiState.exception.message ?: "ERROR")
+
+        else -> {}
     }
 }
 
@@ -223,14 +225,16 @@ fun MhsCard(
                 )
             }
 
-            Text(
-                text = mahasiswa.kelas,
-                style = MaterialTheme.typography.titleMedium
-            )
+
             Text(
                 text = mahasiswa.alamat,
                 style = MaterialTheme.typography.titleMedium
             )
+            Text(
+                text = mahasiswa.judulSripsi,
+                style = MaterialTheme.typography.titleMedium
+            )
+
         }
     }
 }
